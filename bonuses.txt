@@ -1,0 +1,51 @@
+BONUS CHALLENGE FORM
+--------------------
+
+For each bonus challenge you have implemented, please replace the sentence "We are not entitled to this bonus."
+with a short description of:
+
+1. How it was implemented in your code
+2. Where it was used (in which class methods).
+3. How you tested that it is working correctly.
+
+--------------------
+
+1. Fully supporting all configuration fields and avoiding the use of magic numbers
+
+A. in our code you can't find the use of actual numbers inside the code, all parameters was taken from the config file, and parameters that haven't been there, we created as parameters in each class as needed. also, for fully support all the configurations, we implemented options such as print hint, wait timers, size of set according to the features size and more, using the config.parameters that supplied from the user.
+
+B. you can find it in the constructors, sleep timers, and almost in every logic piece of the code, so it's hard to be direct.
+
+C. we run the game many times using different config instructions, every time try to change 1 parameter, and then try to combine many changes. before every check we knew what we would like to see changing- so in every run we checked it is as expected. also, to be sure- every test we run many times to check that the behavior is constent and not random.
+
+--------------------
+
+2. Terminating all threads (that you created) gracefully and in reverse order to the order they were created in.
+
+A. in the code- to end the game we use dealer.terminate() method. the method being called if Xbutton pressed, or if the game should finish. to terminate all threads we itterated over all the players threads in the opposite order of creation and call player.terminate()- each player is responsible to terminate gracefully and also make dealer thread to wait until the player thread is actually die. after terminating all players- dealer terminateFlag change to true- so the dealer will not enter again the loops, and eventually will end his run() method. in player.terminate() firt we change the terminateFlag to true and want to interrupt aiTread and playerThread to wake them up if sleep to continue running and end their run(), the player thread is waiting to his aiThread to die, and only then keep running and also die, only then the deler thread who called player.terminate() will be able to continue to the next player.
+
+B. it was used in the dealer,player terminate() methods- also- to make sure all the threads won't keep sleep when we interrupt, additional logic was implemented in the "catch{}" section in every player/aiThread method call that send the thread to sleep.
+
+C. we run the game many times with the same configuration- and in the end of every run we chacked that all the threads were terminated, and also checked the log file to see the expected output- for example: for 3 players this is the order- computer 3, player 3, computer 2, player 2, computer 1, player 1, and then the dealer thread and main thread. we run the program with many combinations of configuration- and try to let the game end by clicking X, and also be win the game.
+
+--------------------
+
+3. Handling the config.turnTimeoutMillis value as follows:
+config.turnTimeoutMillis < 0: display nothing.
+config.turnTimeoutMillis = 0: display a timer since the last action (reshuffle or set collected).
+Note: in modes without a countdown timer the dealer must ensure there is always at least one legal set on the table.
+
+We are not entitled to this bonus.
+
+--------------------
+
+4. Making sure that the threads do not wake up unless some actual job needs to be done (e.g., a value needs to be
+changed on the display, key input needs to be handled, etc.) and the only threads created by you are:
+1 thread per player + 1 additional thread for non-human players.
+
+A. in our code only 1 dealerThread is created, 1 playerThread for each player and 1 aiThread for each computer player. there are 3 kind of threads that has job to do: aiThread is only need to put items in his player's queue. because of using blockingque as the player queue and the method put(), the aiThread will wait if there is no place in the queue, and will wake up when the queue isn't full, and will do a job. the playerThread use queue.take() so he will sleep when the que is empty, and will wake when there is new slot in the queue. when the player wait to the dealer for answer about his set- he wait on latch object, and wake up when the dealer finished to check his set, also when player in freez time- he wakes up only when needed to update the timer every 1 sec or less if less time left to freez time. the dealer job is to procces players requests to being checked to point or panelty- dealer also use blockingque to collect all players requests, and poll() tasks from the queue- when there is no task in the queue- the deeler is sleeping until the timer has to be updated, or there is new task in the queue. we decided about max 100milisec of sleeping when the timer is in the warning zone. in addition, to let the program run fast and also in a logic way- when accesing the table with placeCards() or removeCards()- the dealer has prioraty to act- when he try to act the players can't start new action on the table, and the dealer start his job on the table when all players finished the task they started before him. in general- all players can play together freely, but when the dealer need to act on the table- all players will wait till the dealer will finish removing and placing new cards. players cant put or remove token between each place/remove card until dealer finished placing all the possible cards, because it makes more real game logic sense, and also to give the dealer full prioraty.
+
+B. we used it in every place that a thread might go to sleep- when trying to put/take from a queue, and when timer is need to be updated, also when player wait to the dealer to test his set or wait to the dealer to finish his action on the table.  
+you can find it in dealer: sleepUntilWokenOrTimeout() ; player: run(), act(), freeze(), AiKeyPressed() ; table: placeOrRemoveToken() methods.
+
+C. to test that the threads are not awake when there is no job to do, we run the program with different max sleep time, also without keypresses to not wake them up before maxtime. we confirmed every senario to the expected behavior. in addition, we tried to run the program properly without keypresses and the timer was correct without delay. another test was tryig to place tokens when player is waiting- and to confirme that the player doesn't wake up when he shouldn't. in general- we used blockingque buit-in functions and simple connections between classes to reduce the optional mistakes, which lid to less combinations of options needed to checked, and to more certain results.
